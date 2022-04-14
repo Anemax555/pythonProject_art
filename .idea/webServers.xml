@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="3778852e-eed7-4271-8ed0-1f0fcaff986b" name="python_art">
+        <fileTransfer accessType="SFTP" host="47.96.18.55" port="22" sshConfigId="78a6c831-de59-42cd-8449-cbf21a58e373" sshConfig="root@47.96.18.55:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
