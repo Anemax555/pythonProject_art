@@ -1,6 +1,7 @@
 import asyncio
+import time
+import cj21web_art
 import aiohttp
-import cj21_art
 from redis import StrictRedis
 from hashlib import md5
 from lxml import etree
@@ -22,19 +23,18 @@ async def get_requests(url):
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ",resp.status,url)
+                print("Erro:  ", resp.status, url)
             return page_text
 
 
 def news_list_get(t):
     page_text = t.result()
     tree = etree.HTML(page_text)
-    news = tree.xpath("//div[@class='news_list']/a/@href")
+    news = tree.xpath("/html/body/div[@class='layout']/div[@class='col-l']/div[@class='news']/a/@href")
     secret = md5()
     for new in news:
         secret.update(new.encode())
         newid = secret.hexdigest()
-        news_list.append(new)
         if not input_redis(newid):
             news_list.append(new)
 
@@ -49,10 +49,32 @@ def page_index_get(urls):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.wait(tasks))
 
+
 def main():
-    urls_index = [
-        'http://m.21jingji.com/'
-    ]
+    f = open('/home/NRGLXT/pythonproject/project_art/py_projiec_358/article/cj21_run/21cj_web', mode='r')
+    url = f.readline()
+    urls_index = []
+    while url:
+        urls_index.append(url.strip())
+        url = f.readline()
+    f.close()
+    # print(len(urls_index),urls_index)
     page_index_get(urls_index)
-    cj21_art.page_index_get(news_list)
-    print("更新 ",len(news_list),"条数据")
+    # print(news_list)
+    n = 0
+    news_url = []
+    for i in range(len(news_list)):
+        if (n == 10):
+            cj21web_art.page_index_get(news_url)
+            news_url = []
+            n = 0
+            time.sleep(1)
+        else:
+            n = n + 1
+            news_url.append(news_list[i])
+    if n != 0:
+        cj21web_art.page_index_get(news_url)
+    print("21JJ Web_index更新 ", len(news_list), "条数据")
+    news_list.clear()
+
+# main()

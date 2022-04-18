@@ -1,6 +1,7 @@
 import asyncio
+import time
 import aiohttp
-import shzqb_art
+import zqrb_art
 from redis import StrictRedis
 from hashlib import md5
 from lxml import etree
@@ -22,14 +23,20 @@ async def get_requests(url):
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ",resp.status,url)
-            return page_text
+                print("Erro:  ", resp.status, url)
+            page_text = await resp.text()
+            page = {"url": url, "page": page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    url = page["url"]
     tree = etree.HTML(page_text)
-    news = tree.xpath("//ul[@id='j_waterfall_list']/li/h2/a/@href")
+    # ===============================================头条中间板块
+    news = tree.xpath(
+        "/html/body/div[@class='center']/div[@class='nr']/div[@class='nrleft']/div[@class='news_content']/ul/li/a/@href")
     secret = md5()
     for new in news:
         secret.update(new.encode())
@@ -48,18 +55,31 @@ def page_index_get(urls):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.wait(tasks))
 
+
 def main():
-    urls_index = [
-        'https://news.cnstock.com/news/sns_yw/index.html',
-        'https://news.cnstock.com/news/sns_jg/index.html',
-        'https://news.cnstock.com/industry',
-        'https://company.cnstock.com/company/scp_gsxw',
-        'https://ggjd.cnstock.com/company/scp_ggjd/tjd_ggkx',
-        'https://ggjd.cnstock.com/company/scp_ggjd/tjd_bbdj',
-        'https://jrz.cnstock.com/',
-        'https://www.cnstock.com/'
-    ]
+    f = open('/home/NRGLXT/pythonproject/project_art/py_projiec_358/article/zqrb_run/zqrb', mode='r')
+    url = f.readline()
+    urls_index = []
+    while url:
+        urls_index.append(url.strip())
+        url = f.readline()
+    f.close()
+
     page_index_get(urls_index)
-    if (len(news_list)>0):
-        shzqb_art.page_news_get(news_list)
-    print("更新 ",len(news_list),"条数据")
+
+    n = 0
+    news_url = []
+    for i in range(len(news_list)):
+        if (n == 10):
+            zqrb_art.page_index_get(news_url)
+            news_url = []
+            n = 0
+            time.sleep(1)
+        else:
+            n = n + 1
+            news_url.append(news_list[i])
+    if n != 0:
+        zqrb_art.page_index_get(news_url)
+
+    print("证券日报index：更新 ", len(news_list), "条数据")
+    news_list.clear()

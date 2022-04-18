@@ -48,7 +48,7 @@ def download_one_page(url):
                     imgurls_list= imgurls_list + "http://hzlaiqian.com/media/img/" + imgfname + ','
 
         params = (news_id, f_title, f_context, f_source, f_sourceTime, f_sourceAddress, f_inputTime, imgurls_list,"证券日报")
-        print(params)
+
 
         cur.execute(sql, params)
         con.commit()
