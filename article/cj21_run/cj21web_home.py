@@ -23,12 +23,15 @@ async def get_requests(url):
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ", resp.status, url)
-            return page_text
+                print("Erro:  ",resp.status,url)
+            page = {"url":url,"page":page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    url = page["url"]
     tree = etree.HTML(page_text)
     # =======================================================头条
     news = tree.xpath("//div[@ class='top-news']/a/@href")
@@ -37,36 +40,40 @@ def news_list_get(t):
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
     # =======================================================左侧分栏头条
     news = tree.xpath("//div[@class='col-ml']/a/@href")
     for new in news:
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
     # =======================================================右侧分栏头条
     news = tree.xpath("//div[@class='col-mr']/a/@href")
     for new in news:
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
     # =======================================================右边侧栏新闻
     news = tree.xpath("//div[@class='col-mr'][1]/div[@class='news-list']/ul/li/a/@href")
     for new in news:
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
     # =======================================================左边侧栏新闻
     news = tree.xpath("//div[@class='col-ml'][1]/div[@class='news-list']/ul/li/a/@href")
     for new in news:
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
-
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
 
 def page_index_get(urls):
     tasks = []

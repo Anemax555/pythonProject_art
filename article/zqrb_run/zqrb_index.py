@@ -17,15 +17,13 @@ def input_redis(url_id):
         redis.sadd('urllist', url_id)
         return False
 
-
 async def get_requests(url):
     async with aiohttp.ClientSession() as sess:
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ", resp.status, url)
-            page_text = await resp.text()
-            page = {"url": url, "page": page_text}
+                print("Erro:  ",resp.status,url)
+            page = {"url":url,"page":page_text}
             return page
 
 
@@ -42,7 +40,9 @@ def news_list_get(t):
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl":url,"url":new}
+            news_list.append(new_info)
+
 
 
 def page_index_get(urls):

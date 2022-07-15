@@ -24,11 +24,14 @@ async def get_requests(url):
             page_text = await resp.text()
             if (resp.status != 200):
                 print("Erro:  ",resp.status,url)
-            return page_text
+            page = {"url":url,"page":page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    url = page["url"]
     tree = etree.HTML(page_text)
     news = tree.xpath("//div[@class='news_list']/a/@href")
     secret = md5()
@@ -36,7 +39,8 @@ def news_list_get(t):
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl":url,"url":new}
+            news_list.append(new_info)
 
 
 def page_index_get(urls):
@@ -74,3 +78,4 @@ def main():
 
     print("21CJ_index 更新 ",len(news_list),"条数据")
     news_list.clear()
+# main()

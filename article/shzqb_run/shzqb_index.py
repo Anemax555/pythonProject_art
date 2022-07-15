@@ -2,7 +2,6 @@ import asyncio
 import aiohttp
 import shzqb_art
 import time
-from tqdm import tqdm
 from redis import StrictRedis
 from hashlib import md5
 from lxml import etree
@@ -24,12 +23,16 @@ async def get_requests(url):
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ", resp.status, url)
-            return page_text, url
+                print("Erro:  ",resp.status,url)
+            page = {"url":url,"page":page_text}
+            return page
+
 
 
 def news_list_get(t):
-    page_text, url = t.result()
+    page = t.result()
+    page_text = page["page"]
+    url = page["url"]
     tree = etree.HTML(page_text)
     news = tree.xpath("//ul[@id='j_waterfall_list']/li/h2/a/@href")
     if (len(news) == 0):
@@ -46,7 +49,8 @@ def news_list_get(t):
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list.append(new_info)
 
 
 def page_index_get(urls):
@@ -72,6 +76,7 @@ def main():
     f.close()
 
     # print(len(urls_index), urls_index)
+    # print(urls_index)
 
     page_index_get(urls_index)
 
@@ -79,7 +84,6 @@ def main():
     news_url = []
     for i in range(len(news_list)):
         if (n == 10):
-            print(i/len(news_list))
             shzqb_art.page_news_get(news_url)
             news_url = []
             n = 0
@@ -93,4 +97,3 @@ def main():
     print("shzqb更新 ", len(news_list), "条数据")
 
     news_list.clear()
-

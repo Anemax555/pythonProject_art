@@ -21,15 +21,18 @@ def input_redis(url_id):
 
 async def get_requests(url):
     async with aiohttp.ClientSession() as sess:
-        async with await sess.get(url=url) as resp:
+        async with await sess.get(url=url["url"]) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
                 print("Erro:  ",resp.status,url)
-            return page_text
+            page = {"url":url,"page":page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    index_url = page["url"]["name"]
     url_zz = re.compile(r'extend.*?CFHQuote.*?<a href=\\"(?P<url>.*?)\\"',re.S)
     for it in url_zz.finditer(page_text):
         url = it.group('url').strip()
@@ -38,7 +41,9 @@ def news_list_get(t):
         secret.update(url.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(url)
+            new_info = {"furl":index_url,"url":url}
+            news_list.append(new_info)
+
 
 
 def page_index_get(urls):
@@ -56,17 +61,21 @@ def main():
 
     # cfh_art_num1.page_index_get(news_list)
     f = open('/home/NRGLXT/pythonproject/project_art/py_projiec_358/article/fund_cfh/cfh_index_page', mode='r')
-    url = f.readline()
+    url_info = f.readline()
     urls_index = []
-    while url:
-        uid = url.split('/')[-1].strip()
+    while url_info:
+        url1 = {"url": url_info.split(' ')[0].strip(), "name": url_info.split(' ')[-1].strip()}
+        uid = url1["url"].split('/')[-1].strip()
         pagenum = 1
         pagesize = 10
-        url = f'https://i.eastmoney.com/api/guba/userdynamiclistv2?uid={uid}&pagenum={pagenum}&pagesize={pagesize}'
-        urls_index.append(url.strip())
-        url = f.readline()
+        url1["url"] = f'https://i.eastmoney.com/api/guba/userdynamiclistv2?uid={uid}&pagenum={pagenum}&pagesize={pagesize}'
+        urls_index.append(url1)
+        url_info = f.readline()
     f.close()
+
+
     page_index_get(urls_index)
+
     n = 0
     news_url = []
     for i in range(len(news_list)):
@@ -82,3 +91,4 @@ def main():
         cfh_art_num1.page_index_get(news_url)
     print("财富号更新 ",len(news_list),"条数据")
     news_list.clear()
+# main()

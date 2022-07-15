@@ -24,12 +24,15 @@ async def get_requests(url):
         async with await sess.get(url=url) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
-                print("Erro:  ", resp.status, url)
-            return page_text
+                print("Erro:  ",resp.status,url)
+            page = {"url":url,"page":page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    furl = page["url"]
     tree = etree.HTML(page_text)
     news = tree.xpath('//div[@class="g-list-text"]/div[@class="m-list"]/ul/li/a/@href')
     secret = md5()
@@ -38,9 +41,8 @@ def news_list_get(t):
         secret.update(url.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list.append(url)
-
-
+            new_info = {"furl":furl,"url":url}
+            news_list.append(new_info)
 
 
 def page_index_get(urls):
@@ -69,7 +71,6 @@ def main():
     if len(urls_index)>0:
         page_index_get(urls_index)
 
-    # print(len(news_list))
     news_url = []
     for i in range(len(news_list)):
         news_url.append(news_list[i])

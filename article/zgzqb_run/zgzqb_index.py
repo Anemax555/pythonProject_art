@@ -25,7 +25,6 @@ async def get_requests(url):
             page_text = await resp.text()
             if (resp.status != 200):
                 print("Erro:  ", resp.status, url)
-            page_text = await resp.text()
             page = {"url": url, "page": page_text}
             return page
 
@@ -67,10 +66,12 @@ def news_list_get(t):
             else:
                 if (new_1[0] == '..'):
                     new_4 = new_3.replace(new_3.split('/')[-1], '') + new_2
-                    news_list.append(new_4)
+                    new_info = {"furl": url, "url": new_4}
+                    news_list.append(new_info)
                 else:
                     new_4 = new_3 + '/' + new_2
-                    news_list.append(new_4)
+                    new_info = {"furl": url, "url": new_4}
+                    news_list.append(new_info)
 
             # if (".." in new):
             #     news_list.append("https://www.cs.com.cn/" + str(new).strip('../'))

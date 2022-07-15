@@ -47,18 +47,22 @@ def news_list_get(t):
         if not input_redis(newid):
             if ("../../" in new):
                 new = "https://www.stcn.com/" + str(new).strip("../../")
-                news_list.append(new)
+                new_info = {"furl": url, "url": new}
+                news_list.append(new_info)
             else:
                 if ("../" in new):
                     new1 = str(url).strip('/')
                     new2 = new1.replace(new1.split('/')[-1],'')
                     new = new2 + str(new).strip("../")
-                    news_list.append(new)
+                    new_info = {"furl": url, "url": new}
+                    news_list.append(new_info)
                 else:
                     if ("http" not in new):
-                        news_list.append(url + str(new).strip('./'))
+                        new_info = {"furl": url, "url": url + str(new).strip('./')}
+                        news_list.append(new_info)
                     else:
-                        news_list.append(new)
+                        new_info = {"furl": url, "url": new}
+                        news_list.append(new_info)
 
 
 
@@ -102,5 +106,3 @@ def main():
 
     print("证券时报index：更新 ", len(news_list), "条数据")
     news_list.clear()
-
-# main()

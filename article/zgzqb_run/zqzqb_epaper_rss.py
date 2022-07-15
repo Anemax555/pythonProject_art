@@ -1,4 +1,3 @@
-
 import feedparser
 import time
 import os.path
@@ -22,7 +21,7 @@ def input_redis(url_id):
 def input_mysql(params):
     con = pymysql.Connect(host='47.96.18.55', user='crawler', password='123456', database='cnstock_db', port=3306)
     cur = con.cursor()
-    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite,f_fromurl) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
     cur.execute(sql, params)
     con.commit()
     con.close()
@@ -53,12 +52,11 @@ def get_data_news(data):
             img_url.append("http://hzlaiqian.com/media/img/" + imgfname)
         img_url = ','.join(img_url)
 
-        params = (f_id, f_title, f_content, f_source, f_sourceTime, f_url, f_inputTime, img_url, "中国证券报电子报·RSS")
+        params = (
+        f_id, f_title, f_content, f_source, f_sourceTime, f_url, f_inputTime, img_url, "中国证券报电子报", "中国证券报电子报·RSS")
         input_mysql(params)
     except:
-        print("Erro ",data['link'])
-
-
+        print("Erro ", data['link'])
 
 
 def get_data_news_list(url):
@@ -76,8 +74,6 @@ def get_data_news_list(url):
     return num
 
 
-
 def main():
     n = get_data_news_list('http://paper.cs.com.cn/RSS/zgzqbjrbz.xml')
     print(f"中国证券报·电子报RSS：{n}条数据")
-

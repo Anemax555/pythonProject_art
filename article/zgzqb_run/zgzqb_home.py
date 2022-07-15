@@ -24,11 +24,14 @@ async def get_requests(url):
             page_text = await resp.text()
             if (resp.status != 200):
                 print("Erro:  ",resp.status,url)
-            return page_text
+            page = {"url":url,"page":page_text}
+            return page
 
 
 def news_list_get(t):
-    page_text = t.result()
+    page = t.result()
+    page_text = page["page"]
+    url = page["url"]
     tree = etree.HTML(page_text)
     #===============================================头条中间板块
     news = tree.xpath('//div[@class="box410 ch_focus space_l1"]/ul/li/a/@href')
@@ -39,9 +42,11 @@ def news_list_get(t):
         # news_list.append(new)
         if not input_redis(newid):
             if ("weixin" not in new):
-                news_list.append("https://www.cs.com.cn" + str(new).strip('.'))
+                new_info = {"furl": url, "url": "https://www.cs.com.cn" + str(new).strip('.')}
+                news_list.append(new_info)
             else:
-                news_list.append(new)
+                new_info = {"furl": url, "url": new}
+                news_list.append(new_info)
     # ===============================================热点新闻
     news = tree.xpath('//div[@class="ch_typewd space_t3"]//a/@href')
     for new in news:
@@ -50,11 +55,11 @@ def news_list_get(t):
         # news_list.append(new)
         if not input_redis(newid):
             if ("weixin" not in new):
-                news_list.append("https://www.cs.com.cn" + str(new).strip('.'))
+                new_info = {"furl": url, "url": "https://www.cs.com.cn" + str(new).strip('.')}
+                news_list.append(new_info)
             else:
-                news_list.append(new)
-
-
+                new_info = {"furl": url, "url": new}
+                news_list.append(new_info)
 
 
 def page_index_get(urls):

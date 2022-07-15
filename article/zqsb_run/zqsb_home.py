@@ -54,7 +54,8 @@ def news_list_get(t):
         secret.update(new.encode())
         newid = secret.hexdigest()
         if not input_redis(newid):
-            news_list_url.append(new)
+            new_info = {"furl": url, "url": new}
+            news_list_url.append(new_info)
 
 
 def page_index_get(urls):

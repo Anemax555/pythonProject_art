@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import time
 import aiohttp
@@ -11,7 +12,7 @@ from lxml import etree
 def input_mysql(params):
     con = pymysql.Connect(host='47.96.18.55', user='crawler', password='123456', database='cnstock_db', port=3306)
     cur = con.cursor()
-    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite,f_fromurl) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
     cur.execute(sql, params)
     con.commit()
     con.close()
@@ -19,11 +20,11 @@ def input_mysql(params):
 
 async def get_requests(url):
     async with aiohttp.ClientSession() as sess:
-        async with await sess.get(url=url) as resp:
+        async with await sess.get(url=url["url"]) as resp:
             page_text = await resp.text()
             if (resp.status != 200):
                 print("Erro:  ", resp.status, url)
-                page = {"url": url, "page": page_text, "status": 403}
+                page = {"url": url, "page": page_text, "status": resp.status}
                 return page
             page = {"url": url, "page": page_text, "status": 200}
             return page
@@ -35,7 +36,8 @@ def article_get(t):
         return
     try:
         page_text = page["page"]
-        url = page["url"]
+        url = page["url"]["url"]
+        furl = page["url"]["furl"]
         f_inputTime = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())
         tree = etree.HTML(page_text)
         uid = str(url).split('/')[-1].strip('.html')
@@ -68,22 +70,34 @@ def article_get(t):
             art = it.group("context")
         art.strip()
 
-        img_list = ""
-        img_path = "/home/NRGLXT/source/media/img/"
+        type_list = ['bmp', 'jpg', 'png', 'tif', 'gif', 'pcx', 'tga', 'exif', 'fpx', 'svg', 'psd', 'cdr', 'pcd', 'dxf',
+                     'ufo', 'eps', 'ai', 'raw', 'wmf', 'webp', 'avif', 'apng','jpeg']
+
+        #======================================图片
+        mon = time.strftime("%Y-%m", time.localtime())
+        day = time.strftime("%d", time.localtime())
+        img_list = []
+        img_path = f"/home/NRGLXT/source/media/img/{mon}/{day}/"
         # img_path = "D:\pythonProject\Pic\\"
         if not os.path.exists(img_path):  # 创建路径
             os.mkdir(img_path)
         for i in range(0, len(img_url)):
-
-            imgfname = f_inputTime[0:10] + uid + "_" + str(i) + os.path.splitext(img_url[i])[1]
+            url_type = os.path.splitext(img_url[i])[1]
+            for j in range(len(type_list)):
+                if type_list[j] in url_type:
+                    url_type = type_list[j]
+            imgfname = uid + "_" + str(i) + '.' + url_type
+            url1 = f"http://hzlaiqian.com/media/img/{mon}/{day}/" + imgfname
             urllib.request.urlretrieve(img_url[i], filename=img_path + imgfname)  # 下载图片
-            art = art.replace(img_url[i], "http://hzlaiqian.com/media/img/" + imgfname)
-            img_list = img_list + "http://hzlaiqian.com/media/img/" + imgfname + ","
-
-        params = (uid, title, art, f_source, sourTime, url, f_inputTime, img_list, "21世纪经济报道")
+            art = art.replace(img_url[i], url1)
+            img_list.append(url1)
+        img_list= json.dumps(img_list)
+        params = (uid, title, art, f_source, sourTime, url, f_inputTime, img_list, "21世纪经济报道", furl)
         input_mysql(params)
+
+        #======================================================test
+
         # params = (uid, title, f_source, sourTime, url, f_inputTime, img_list, "21世纪经济报道")
-        # print(params)
     except:
         print("Erro ", url)
 
@@ -98,6 +112,6 @@ def page_index_get(urls):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.wait(tasks))
 
-#
-# url = ['https://m.21jingji.com/article/20220630/herald/053a7206ed73e18b51c37ac692043495.html']
+
+# url = [{'furl': 'http://m.21jingji.com/','url': 'https://m.21jingji.com/article/20220711/herald/3c2fb6c8be24b28f46060bf45ce381e0.html'}]
 # page_index_get(url)

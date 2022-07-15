@@ -1,5 +1,6 @@
 import asyncio
 import html
+import json
 import re
 import time
 import aiohttp
@@ -12,7 +13,7 @@ from lxml import etree
 def input_mysql(params):
     con = pymysql.Connect(host='47.96.18.55', user='crawler', password='123456', database='cnstock_db', port=3306)
     cur = con.cursor()
-    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite,f_fromurl) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
     cur.execute(sql, params)
     con.commit()
     con.close()
@@ -20,13 +21,18 @@ def input_mysql(params):
 
 async def get_requests(url):
     async with aiohttp.ClientSession() as sess:
-        async with await sess.get(url=url) as resp:
-            page_text = await resp.text()
-            if (resp.status != 200):
-                print("Erro:  ", resp.status, url)
-                page = {"url": url, "page": page_text, "status": 403}
+        try:
+            async with await sess.get(url=url["url"]) as resp:
+                page_text = await resp.text()
+                if (resp.status != 200):
+                    print("Erro:  ", resp.status, url)
+                    page = {"url": url, "page": page_text, "status": resp.status}
+                    return page
+                page = {"url": url, "page": page_text, "status": 200}
                 return page
-            page = {"url": url, "page": page_text, "status": 200}
+        except:
+            print("Erro_link",url)
+            page  = {"url": url, "page":"", "status": 600}
             return page
 
 
@@ -36,7 +42,8 @@ def article_get(t):
         if (page["status"] != 200):
             return
         page_text = page["page"]
-        url = page["url"]
+        url = page["url"]["url"]
+        furl = page["url"]["furl"]
         tree = etree.HTML(page_text)
         title = tree.xpath('//div[@class="g-article"]/div[@class="g-article-top"]/h1/text()')
         if (len(title) == 0):
@@ -57,30 +64,34 @@ def article_get(t):
 
         if ('每经头条（nbdtoutiao）——' in art):
             art = ''.join(art.split('每经头条（nbdtoutiao）——')[0])
-
+        #===================================================================图片处理
+        mon = time.strftime("%Y-%m", time.localtime())
+        day = time.strftime("%d", time.localtime())
         art_path = etree.HTML(art)
         art = html.unescape(art)
         img_url = art_path.xpath('//img/@src')
-        img_list = ""
-        img_path = "/home/NRGLXT/source/media/img/"
+        img_list = []
+        img_path = f"/home/NRGLXT/source/media/img/{mon}/{day}/"
         # img_path = "D:\pythonProject\Pic\\"
         if not os.path.exists(img_path):  # 创建路径
             os.mkdir(img_path)
         for i in range(0, len(img_url)):
-            if (str(img_url[i]).split('.')[-1].lower() not in 'bmp，jpg，png，tif，gif，pcx，tga，exif，fpx，svg，psd，cdr，pcd，dxf，ufo，eps，ai，raw，WMF，webp，avif，apng'):
-                imgfname = sourTime[0:10] + uid + "_" + str(i) + '.jpg'
-                print(html.unescape(img_url[i]))
+            if (str(img_url[i]).split('.')[
+                -1].lower() not in 'bmp，jpg，png，tif，gif，pcx，tga，exif，fpx，svg，psd，cdr，pcd，dxf，ufo，eps，ai，raw，WMF，webp，avif，apng'):
+                imgfname =  uid + "_" + str(i) + '.jpg'
             else:
-                imgfname = sourTime[0:10] + uid + "_" + str(i) + os.path.splitext(img_url[i])[1]
-            # urllib.request.urlretrieve(img_url[i], filename=img_path + imgfname)  # 下载图片
-            art = art.replace(img_url[i], "http://hzlaiqian.com/media/img/" + imgfname)
-            img_list = img_list + "http://hzlaiqian.com/media/img/" + imgfname + ","
+                imgfname = uid + "_" + str(i) + os.path.splitext(img_url[i])[1]
+            urllib.request.urlretrieve(img_url[i], filename=img_path + imgfname)  # 下载图片
+            url1 = f"http://hzlaiqian.com/media/img/{mon}/{day}/" + imgfname
+            art = art.replace(img_url[i], url1)
+            img_list.append(url1)
         f_inputTime = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())
-        params = (uid, title, art, source, sourTime, url, f_inputTime, img_list, "每日经济新闻")
+        img_list = json.dumps(img_list)
+        params = (uid, title, art, source, sourTime, url, f_inputTime, img_list, "每日经济新闻", furl)
         input_mysql(params)
         # print(params)
     except:
-        print("Erro ",url)
+        print("Erro ", url)
 
 
 def page_index_get(urls):
@@ -93,6 +104,5 @@ def page_index_get(urls):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.wait(tasks))
 
-
-# url = ['http://www.nbd.com.cn/articles/2022-07-05/2352602.html']
+# url = [{'furl':'1111','url':'http://www.nbd.com.cn/articles/2022-07-14/2363614.html'}]
 # page_index_get(url)

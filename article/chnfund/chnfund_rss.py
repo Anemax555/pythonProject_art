@@ -23,7 +23,7 @@ def input_redis(url_id):
 def input_mysql(params):
     con = pymysql.Connect(host='47.96.18.55', user='crawler', password='123456', database='cnstock_db', port=3306)
     cur = con.cursor()
-    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+    sql = 'insert ignore into f_article (f_uid,f_title,f_context,f_source,f_sourceTime,f_sourceAddress,f_inputTime,f_media,f_sourceSite,f_fromurl) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
     cur.execute(sql, params)
     con.commit()
     con.close()
@@ -41,21 +41,25 @@ def get_data_news(data):
     art = etree.HTML(f_content)
     img_list = art.xpath('//img/@src')
 
-    img_path = "/home/NRGLXT/source/media/img/"
+    mon = time.strftime("%Y-%m", time.localtime())
+    day = time.strftime("%d", time.localtime())
+    img_path = f"/home/NRGLXT/source/media/img/{mon}/{day}/"
     # img_path = "D:\pythonProject\Pic\\"
     if not os.path.exists(img_path):  # 创建路径
         os.mkdir(img_path)
     img_url = []
     for i in range(0, len(img_list)):
-        imgfname = f_inputTime[0:10] + f_id[-8:] + "_" + str(i) + os.path.splitext(img_list[i])[1]
-        f_content = f_content.replace(img_list[i], "http://hzlaiqian.com/media/img/" + imgfname)
+        imgfname = f_id + "_" + str(i) + os.path.splitext(img_list[i])[1]
+        url1 = f"http://hzlaiqian.com/media/img/{mon}/{day}/" + imgfname
+        f_content = f_content.replace(img_list[i], url1)
         urllib.request.urlretrieve(img_list[i], filename=img_path + imgfname)  # 下载图片
-        img_url.append("http://hzlaiqian.com/media/img/" + imgfname)
-    img_url = ','.join(img_url)
+        img_url.append(url1)
+    img_url = json.dumps(img_url)
 
-    params = (f_id, f_title, f_content, f_source, f_sourceTime, f_url, f_inputTime, img_url, "中国基金报")
+    params = (f_id, f_title, f_content, f_source, f_sourceTime, f_url, f_inputTime, img_url, "中国基金报", "中国基金报RSS")
     input_mysql(params)
     # print(params)
+    # print(img_url)
 
 
 def get_data_news_list(url):
@@ -77,6 +81,7 @@ def get_data_news_list(url):
 def main():
     url = 'https://www.chnfund.com/content/list'
     get_data_news_list(url)
+
 
 def task():
     print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
